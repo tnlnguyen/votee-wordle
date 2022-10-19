@@ -1,0 +1,10 @@
+.gitignore
+.prettierignore
+yarn.lock
+yarn-error.log
+package-lock.json
+dist
+coverage
+.gitlab-ci.yml
+.gitlab
+sonar-project.properties
