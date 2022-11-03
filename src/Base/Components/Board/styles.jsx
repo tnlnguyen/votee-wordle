@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { styled } from '@mui/system';
 
 export const Item = styled(Box)(({status}) => ({
@@ -19,3 +19,9 @@ export const Wrapper = styled(Box)({
   display: 'flex',
   justifyContent: 'space-between'
 });
+
+export const AnswerText = styled(Typography)(({shadow}) => ({
+  textShadow: '0 0 6px black',
+  cursor: 'pointer',
+  color: shadow || 'transparent',
+}));

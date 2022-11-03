@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { dailyGuess, randomGuess, wordGuess } from 'Core/Apis/GuessApi';
 import { Mode } from 'Core/Utils/Enum';
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import Input from '../Input/Input';
 import VoteeButton from '../Button/Button';
-import { Item, Wrapper } from './styles';
+import { Item, Wrapper, AnswerText } from './styles';
 
 const Board = ({ mode }) => {
   const [word, setWord] = useState();
   const [size, setSize] = useState();
   const [seed, setSeed] = useState();
   const [slot, setSlot] = useState();
+  const [guessedAnswer, setGuessedAnswer] = useState();
   const [guessed, setGuessed] = useState();
+  const [shadow, setShadow] = useState('transparent');
+  const [suggest, setSuggest] = useState();
 
   const onChange = (value, type) => {
     switch (type) {
@@ -33,7 +36,9 @@ const Board = ({ mode }) => {
   };
 
   const validate = () => {
-    return mode === Mode.DAILY || mode === Mode.RANDOM ? !!word : !!word && !!slot && word.length === slot.length;
+    return mode === Mode.DAILY || mode === Mode.RANDOM
+      ? !!word
+      : !!word && !!slot && word.length === slot.length;
   };
 
   const handleGuess = async () => {
@@ -49,15 +54,17 @@ const Board = ({ mode }) => {
         case Mode.DAILY:
           result = await dailyGuess({
             guess: word,
-            size: word?.length || 0,
+            size: size || word?.length || 0,
           });
           break;
         case Mode.RANDOM:
           result = await randomGuess({
             guess: word,
-            size: word?.length || 0,
+            size: size || word?.length || 0,
             seed,
           });
+          getAnswer(result);
+
           break;
         case Mode.WORD:
           result = await wordGuess({
@@ -74,6 +81,82 @@ const Board = ({ mode }) => {
     } catch (e) {
       alert(e); //Error Catch
     }
+  };
+
+  const getAnswer = async (firstAnswer) => {
+    let answer = firstAnswer.map((item) => {
+      if (item?.result === 'correct') return item?.guess;
+      else return '.';
+    });
+
+    let allChars = [
+      'q',
+      'w',
+      'e',
+      'r',
+      't',
+      'y',
+      'u',
+      'i',
+      'o',
+      'p',
+      'a',
+      's',
+      'd',
+      'f',
+      'g',
+      'h',
+      'j',
+      'k',
+      'l',
+      'z',
+      'x',
+      'c',
+      'v',
+      'b',
+      'n',
+      'm',
+    ];
+
+    for (let i = 0; i < answer.length; i++) {
+      if (answer[i] === '.') {
+        for (let j = 0; j < allChars.length; j++) {
+          let answerResult = await randomGuess({
+            guess: `${word.slice(0, i)}${allChars[j]}${word.slice(i + 1)}`,
+            size: size || word?.length || 0,
+            seed,
+          });
+
+          if (answerResult[i]?.result === 'correct') {
+            answer[i] = allChars[j];
+            break;
+          }
+        }
+      }
+    }
+
+    setGuessedAnswer(answer);
+    getSuggestionChar(answer, firstAnswer);
+  };
+
+  const toggleBlur = () => {
+    if (shadow === 'transparent') {
+      setShadow('black');
+    } else {
+      setShadow('transparent');
+    }
+  };
+
+  const getSuggestionChar = (guessedAnswer, firstAnswer) => {
+    const firstAnswerTransformed = firstAnswer?.map(item => item?.guess)
+
+    const suggest = guessedAnswer?.map((item) => {
+      if (!firstAnswerTransformed?.includes(item)) return item;
+      else return '';
+    });
+
+
+    setSuggest(suggest?.filter(item => item != '')?.join(','));
   };
 
   return (
@@ -144,6 +227,17 @@ const Board = ({ mode }) => {
             value={seed}
             onChange={(val) => onChange(val, 'seed')}
           />
+
+          <Typography sx={{ display: 'flex', margin: '10px 0 10px 0' }}>
+            Let's try these characters: {suggest}
+          </Typography>
+
+          <Typography sx={{ display: 'flex', margin: '10px 0 10px 0' }}>
+            Tired ? Click to see the answer:{' '}
+            <AnswerText onClick={toggleBlur} shadow={shadow}>
+              {guessedAnswer}
+            </AnswerText>
+          </Typography>
           <VoteeButton variant="outlined" text="Result" onClick={handleGuess} />
         </Box>
       )}
